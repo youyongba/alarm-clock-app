@@ -1,0 +1,6 @@
+{
+  "name": "Pomodoro Webhook Ring Demo",
+  "description": "番茄风格 Webhook 响铃器，全面支持 iOS 与 Android 前台强制声音播放、硬件震动与 Webhook 广播",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

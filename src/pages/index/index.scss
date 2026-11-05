@@ -1,0 +1,46 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/* 番茄主题色板定义 */
+$color-tomato: #e74c3c;
+$color-tomato-dark: #c0392b;
+$color-cream: #fff8f0;
+$color-leaf: #27ae60;
+$color-sky: #2980b9;
+
+.pomodoro-app-container {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: radial-gradient(circle at 50% 0%, #ffffff 0%, #fff4ec 50%, #ffece4 100%);
+  padding-top: env(safe-area-inset-top, 16px);
+  padding-bottom: env(safe-area-inset-bottom, 24px);
+  padding-left: env(safe-area-inset-left, 16px);
+  padding-right: env(safe-area-inset-right, 16px);
+}
+
+/* 按钮通用按压微缩放动效 */
+.btn-tomato-press {
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.15s ease;
+  &:active {
+    transform: scale(0.96);
+  }
+}
+
+/* 脉冲光晕关键帧 */
+@keyframes ring-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.6);
+  }
+  70% {
+    box-shadow: 0 0 0 16px rgba(231, 76, 60, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(231, 76, 60, 0);
+  }
+}
+
+.ring-pulse-effect {
+  animation: ring-pulse 1.8s infinite;
+}

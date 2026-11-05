@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowJs": true,
+    "checkJs": false,
+    "jsx": "react-jsx",
+    "skipLibCheck": true,
+    "noEmit": true,
+    "paths": {
+      "@/*": ["./src/*"],
+      "@tarojs/taro": ["./src/services/taro-shim.js"]
+    }
+  },
+  "include": ["src/**/*", "server/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>🍅 番茄响铃器 - Webhook 实时触发与番茄钟</title>
+    <meta name="description" content="番茄风格 Webhook 响铃器，支持 iOS 与 Android 静音模式强制声音播放、硬件震动与 WebSocket 实时广播" />
+    <meta property="og:title" content="🍅 番茄响铃器 - Webhook 实时触发与番茄钟" />
+    <meta property="og:description" content="番茄风格 Webhook 响铃器，支持 iOS 与 Android 静音模式强制声音播放、硬件震动与 WebSocket 实时广播" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    
+    <!-- 移动端 (iOS & Android) PWA 与独立全屏支持 -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="番茄响铃器" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#E74C3C" />
+    <meta name="format-detection" content="telephone=no" />
+
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍅</text></svg>">
+
+    <!-- 忽略开发环境中 Vite 客户端 HMR/WebSocket 传输临时中断报错 -->
+    <script>
+      window.addEventListener('error', function (event) {
+        if (
+          event &&
+          (event.message?.includes('createWebSocketModuleRunnerTransport') ||
+            event.message?.includes('@vite/client') ||
+            (typeof event.filename === 'string' && event.filename.includes('@vite/client')))
+        ) {
+          event.stopImmediatePropagation();
+          event.preventDefault();
+        }
+      }, true);
+      window.addEventListener('unhandledrejection', function (event) {
+        var reason = event && event.reason ? (event.reason.message || String(event.reason)) : '';
+        if (reason && (reason.includes('WebSocket') || reason.includes('@vite/client') || reason.includes('vite'))) {
+          event.preventDefault();
+        }
+      });
+    </script>
+  </head>
+  <body class="bg-[#FFF8F0] text-gray-800 antialiased selection:bg-[#E74C3C] selection:text-white overscroll-none">
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
