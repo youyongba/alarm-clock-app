@@ -125,44 +125,71 @@ export default function RingHistory({
       </div>
 
       {/* 分类过滤 Tab */}
-      <div className="flex items-center gap-1.5 p-1 bg-[#FFF0E6] rounded-2xl mb-4 w-full">
+      <div className="flex items-center gap-1 sm:gap-1.5 p-1 bg-[#FFF0E6] rounded-2xl mb-4 w-full">
         <button
           type="button"
           onClick={() => setFilterType('all')}
-          className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer ${
+          className={`flex-1 py-1.5 px-1 sm:px-2 rounded-xl text-[11px] sm:text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap shrink-0 min-w-0 ${
             filterType === 'all'
               ? 'bg-[#E74C3C] text-white shadow-xs'
               : 'text-gray-600 hover:text-[#E74C3C]'
           }`}
         >
-          <ListFilter className="w-3 h-3" />
-          全部 ({records.length})
+          <ListFilter className="w-3 h-3 shrink-0" />
+          <span>全部</span>
+          <span
+            className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold leading-none ${
+              filterType === 'all'
+                ? 'bg-white/25 text-white'
+                : 'bg-[#FFE6D5] text-[#E74C3C]'
+            }`}
+          >
+            {records.length}
+          </span>
         </button>
 
         <button
           type="button"
           onClick={() => setFilterType('webhook')}
-          className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer ${
+          className={`flex-1 py-1.5 px-1 sm:px-2 rounded-xl text-[11px] sm:text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap shrink-0 min-w-0 ${
             filterType === 'webhook'
               ? 'bg-[#E74C3C] text-white shadow-xs'
               : 'text-gray-600 hover:text-[#E74C3C]'
           }`}
         >
-          <Globe className="w-3 h-3" />
-          Webhook ({webhookCount})
+          <Globe className="w-3 h-3 shrink-0" />
+          <span>Webhook</span>
+          <span
+            className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold leading-none ${
+              filterType === 'webhook'
+                ? 'bg-white/25 text-white'
+                : 'bg-[#FFE6D5] text-[#E74C3C]'
+            }`}
+          >
+            {webhookCount}
+          </span>
         </button>
 
         <button
           type="button"
           onClick={() => setFilterType('timer')}
-          className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer ${
+          className={`flex-1 py-1.5 px-1 sm:px-2 rounded-xl text-[11px] sm:text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap shrink-0 min-w-0 ${
             filterType === 'timer'
               ? 'bg-[#E74C3C] text-white shadow-xs'
               : 'text-gray-600 hover:text-[#E74C3C]'
           }`}
         >
-          <Clock className="w-3 h-3" />
-          定时闹钟 ({timerCount})
+          <Clock className="w-3 h-3 shrink-0" />
+          <span>定时闹钟</span>
+          <span
+            className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold leading-none ${
+              filterType === 'timer'
+                ? 'bg-white/25 text-white'
+                : 'bg-[#FFE6D5] text-[#E74C3C]'
+            }`}
+          >
+            {timerCount}
+          </span>
         </button>
       </div>
 
@@ -214,23 +241,23 @@ export default function RingHistory({
               </div>
 
               {/* 详情与重放栏 */}
-              <div className="flex items-center justify-between pt-1 border-t border-red-50/80 text-[10px] text-gray-500">
-                <span className="font-mono truncate max-w-[170px]" title={item.eventId}>
+              <div className="flex items-center justify-between pt-1 border-t border-red-50/80 text-[10px] text-gray-500 gap-2">
+                <span className="font-mono truncate min-w-0" title={item.eventId}>
                   ID: {item.eventId || item.id}
                 </span>
 
-                <div className="flex items-center gap-1.5">
-                  <span className="px-1.5 py-0.2 bg-red-50 text-[#E74C3C] rounded-md font-mono">
+                <div className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
+                  <span className="px-1.5 py-0.2 bg-red-50 text-[#E74C3C] rounded-md font-mono shrink-0">
                     {Math.round(item.durationMs / 1000)}s
                   </span>
 
                   <button
                     type="button"
                     onClick={() => handleReplay(item)}
-                    className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white hover:bg-red-50 text-[#E74C3C] border border-red-100 transition cursor-pointer font-semibold"
+                    className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white hover:bg-red-50 text-[#E74C3C] border border-red-100 transition cursor-pointer font-semibold shrink-0"
                     title="立即重放此音效"
                   >
-                    <Volume2 className="w-3 h-3" />
+                    <Volume2 className="w-3 h-3 shrink-0" />
                     重放
                   </button>
 

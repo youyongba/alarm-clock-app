@@ -222,13 +222,13 @@ export default function UserProfile({
       <div className="bg-white rounded-3xl p-5 shadow-xs border border-red-100 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-red-500/10 to-amber-500/5 rounded-full blur-3xl -mr-12 -mt-12 pointer-events-none" />
 
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-3">
+        <div className="flex items-start justify-between mb-4 gap-2">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
             {/* 可点击更换的头像 */}
             <button
               type="button"
               onClick={() => setIsEditingAvatar(!isEditingAvatar)}
-              className="relative group w-14 h-14 rounded-2xl bg-red-50 border-2 border-red-200 flex items-center justify-center text-3xl shadow-xs transition hover:scale-105 active:scale-95 cursor-pointer"
+              className="relative group w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-red-50 border-2 border-red-200 flex items-center justify-center text-3xl shadow-xs transition hover:scale-105 active:scale-95 cursor-pointer shrink-0"
               title="点击更换头像"
             >
               <span>{user.avatar || '🍅'}</span>
@@ -237,7 +237,7 @@ export default function UserProfile({
               </span>
             </button>
 
-            <div>
+            <div className="min-w-0 flex-1">
               {/* 昵称编辑 */}
               {isEditingNickname ? (
                 <div className="flex items-center gap-1.5 my-0.5">
@@ -253,28 +253,28 @@ export default function UserProfile({
                     type="button"
                     onClick={handleSaveNickname}
                     disabled={isSaving}
-                    className="px-2 py-1 rounded-lg bg-[#E74C3C] text-white text-[11px] font-bold cursor-pointer"
+                    className="px-2 py-1 rounded-lg bg-[#E74C3C] text-white text-[11px] font-bold cursor-pointer shrink-0"
                   >
                     保存
                   </button>
                   <button
                     type="button"
                     onClick={() => setIsEditingNickname(false)}
-                    className="px-1.5 py-1 text-gray-400 hover:text-gray-600 text-[11px] cursor-pointer"
+                    className="px-1.5 py-1 text-gray-400 hover:text-gray-600 text-[11px] cursor-pointer shrink-0"
                   >
                     取消
                   </button>
                 </div>
               ) : (
                 <div className="flex items-center gap-1.5">
-                  <h2 className="text-base font-bold text-gray-800">{user.nickname}</h2>
+                  <h2 className="text-sm sm:text-base font-bold text-gray-800 truncate">{user.nickname}</h2>
                   <button
                     type="button"
                     onClick={() => {
                       setTempNickname(user.nickname);
                       setIsEditingNickname(true);
                     }}
-                    className="text-gray-400 hover:text-[#E74C3C] transition cursor-pointer"
+                    className="text-gray-400 hover:text-[#E74C3C] transition cursor-pointer shrink-0"
                     title="修改昵称"
                   >
                     <Settings className="w-3.5 h-3.5" />
@@ -283,23 +283,25 @@ export default function UserProfile({
               )}
 
               {/* 邮箱与验证标志 */}
-              <div className="flex items-center gap-1 text-[11px] text-gray-500 mt-0.5">
-                <Mail className="w-3 h-3 text-gray-400" />
-                <span>{user.email}</span>
-                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full bg-green-50 text-green-700 text-[10px] font-bold border border-green-200">
-                  <ShieldCheck className="w-2.5 h-2.5" /> 已验证
+              <div className="flex items-center gap-1.5 text-[11px] text-gray-500 mt-1 min-w-0">
+                <div className="flex items-center gap-1 min-w-0 truncate">
+                  <Mail className="w-3 h-3 text-gray-400 shrink-0" />
+                  <span className="truncate" title={user.email}>{user.email}</span>
+                </div>
+                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200 shrink-0 whitespace-nowrap">
+                  <ShieldCheck className="w-2.5 h-2.5 shrink-0" /> 已验证
                 </span>
               </div>
 
-              <div className="text-[10px] text-gray-400 font-mono mt-0.5">
+              <div className="text-[10px] text-gray-400 font-mono mt-0.5 truncate">
                 ID: {user.uid?.slice(0, 16)}...
               </div>
             </div>
           </div>
 
           {/* 状态徽章 */}
-          <span className="px-2.5 py-1 rounded-xl bg-amber-50 text-amber-800 font-bold text-[11px] border border-amber-200 flex items-center gap-1">
-            <Award className="w-3 h-3 text-amber-600" />
+          <span className="px-2.5 py-1 rounded-xl bg-amber-50 text-amber-800 font-bold text-[11px] border border-amber-200 flex items-center gap-1 shrink-0 whitespace-nowrap self-start mt-0.5">
+            <Award className="w-3 h-3 text-amber-600 shrink-0" />
             <span>自律达人</span>
           </span>
         </div>

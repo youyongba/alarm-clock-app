@@ -88,10 +88,30 @@ export default function CustomTimer({ onRingTrigger }) {
     return `${hh}:${mm}`;
   };
 
-  const [alarmTime, setAlarmTime] = useState(getDefaultTargetTime());
-  const [alarmMessage, setAlarmMessage] = useState('喝水与站立活动提醒');
+  const [alarmTime, setAlarmTime] = useState(() => {
+    try {
+      return localStorage.getItem('pomodoro_custom_alarm_time') || getDefaultTargetTime();
+    } catch {
+      return getDefaultTargetTime();
+    }
+  });
+  const [alarmMessage, setAlarmMessage] = useState(() => {
+    try {
+      return localStorage.getItem('pomodoro_custom_alarm_msg') || '喝水与站立活动提醒';
+    } catch {
+      return '喝水与站立活动提醒';
+    }
+  });
   const [alarmEnabled, setAlarmEnabled] = useState(false);
   const [alarmRemainingSec, setAlarmRemainingSec] = useState(0);
+
+  // 记忆闹钟时间与文案
+  useEffect(() => {
+    try {
+      localStorage.setItem('pomodoro_custom_alarm_time', alarmTime);
+      localStorage.setItem('pomodoro_custom_alarm_msg', alarmMessage);
+    } catch {}
+  }, [alarmTime, alarmMessage]);
 
   // 检查定点闹钟
   useEffect(() => {
@@ -150,26 +170,26 @@ export default function CustomTimer({ onRingTrigger }) {
         <button
           type="button"
           onClick={() => setMode('countdown')}
-          className={`flex-1 py-2 px-3 rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer flex items-center justify-center gap-1.5 ${
+          className={`flex-1 py-2 px-3 rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap shrink-0 ${
             mode === 'countdown'
               ? 'bg-[#E74C3C] text-white shadow-md shadow-red-500/20'
               : 'text-gray-600 hover:text-[#E74C3C]'
           }`}
         >
-          <Timer className="w-4 h-4" />
-          快捷倒计时
+          <Timer className="w-4 h-4 shrink-0" />
+          <span>快捷倒计时</span>
         </button>
         <button
           type="button"
           onClick={() => setMode('alarm')}
-          className={`flex-1 py-2 px-3 rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer flex items-center justify-center gap-1.5 ${
+          className={`flex-1 py-2 px-3 rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap shrink-0 ${
             mode === 'alarm'
               ? 'bg-[#E74C3C] text-white shadow-md shadow-red-500/20'
               : 'text-gray-600 hover:text-[#E74C3C]'
           }`}
         >
-          <AlarmClock className="w-4 h-4" />
-          定点闹钟
+          <AlarmClock className="w-4 h-4 shrink-0" />
+          <span>定点闹钟</span>
         </button>
       </div>
 

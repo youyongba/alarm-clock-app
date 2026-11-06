@@ -26,19 +26,51 @@ import {
   Ruler,
 } from 'lucide-react';
 
+const CYCLING_PARAMS_STORAGE_KEY = 'pomodoro_cycling_user_params';
+
+const loadSavedCyclingParams = () => {
+  try {
+    const raw = localStorage.getItem(CYCLING_PARAMS_STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+};
+
 /**
  * 骑行热量与身体健康指标计算器组件
  */
 export default function CyclingCalculator() {
-  // 基础身体数据
-  const [heightCm, setHeightCm] = useState(175);
-  const [weightKg, setWeightKg] = useState(68);
+  // 读取已保存的个人身体与骑行偏好数据（持久化记忆）
+  const [savedParams] = useState(loadSavedCyclingParams);
 
-  // 骑行数据
-  const [distanceKm, setDistanceKm] = useState(15);
-  const [durationMinutes, setDurationMinutes] = useState(45);
-  const [speedMode, setSpeedMode] = useState('duration'); // 'duration' (按耗时计算) | 'preset' (按强度/均速计算)
-  const [presetSpeed, setPresetSpeed] = useState(20); // km/h
+  // 基础身体数据（持久化记忆）
+  const [heightCm, setHeightCm] = useState(() => (savedParams?.heightCm ? savedParams.heightCm : 175));
+  const [weightKg, setWeightKg] = useState(() => (savedParams?.weightKg ? savedParams.weightKg : 68));
+
+  // 骑行数据（持久化记忆）
+  const [distanceKm, setDistanceKm] = useState(() => (savedParams?.distanceKm !== undefined ? savedParams.distanceKm : 15));
+  const [durationMinutes, setDurationMinutes] = useState(() => (savedParams?.durationMinutes !== undefined ? savedParams.durationMinutes : 45));
+  const [speedMode, setSpeedMode] = useState(() => savedParams?.speedMode || 'duration'); // 'duration' (按耗时计算) | 'preset' (按强度/均速计算)
+  const [presetSpeed, setPresetSpeed] = useState(() => savedParams?.presetSpeed ?? 20); // km/h
+
+  // 自动将用户填写的数据持久化保存，避免切走页面或刷新后变回默认值
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        CYCLING_PARAMS_STORAGE_KEY,
+        JSON.stringify({
+          heightCm: heightCm === '' ? 175 : Number(heightCm),
+          weightKg: weightKg === '' ? 68 : Number(weightKg),
+          distanceKm: distanceKm === '' ? 15 : Number(distanceKm),
+          durationMinutes: durationMinutes === '' ? 45 : Number(durationMinutes),
+          speedMode,
+          presetSpeed,
+        })
+      );
+    } catch {}
+  }, [heightCm, weightKg, distanceKm, durationMinutes, speedMode, presetSpeed]);
 
   // 实时骑行模式状态
   const [isLiveRiding, setIsLiveRiding] = useState(false);
@@ -57,13 +89,13 @@ export default function CyclingCalculator() {
   });
 
   // BMI 计算
-  const bmiInfo = calculateBMI(heightCm, weightKg);
+  const bmiInfo = calculateBMI(Number(heightCm) || 175, Number(weightKg) || 68);
 
   // 卡路里计算
   const calorieResult = calculateCyclingCalories({
-    weightKg,
+    weightKg: Number(weightKg) || 68,
     distanceKm: parseFloat(distanceKm) || 0,
-    durationMinutes: speedMode === 'duration' ? parseFloat(durationMinutes) || 0 : undefined,
+    durationMinutes: speedMode === 'duration' ? (parseInt(durationMinutes, 10) || 0) : undefined,
     speedKmH: speedMode === 'preset' ? presetSpeed : undefined,
   });
 
@@ -149,58 +181,89 @@ export default function CyclingCalculator() {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto bg-white/90 backdrop-blur-md rounded-3xl p-6 sm:p-7 shadow-xl shadow-red-500/5 border border-red-100 flex flex-col items-center">
+    <div className="w-full max-w-md mx-auto bg-white/90 backdrop-blur-md rounded-3xl p-4 sm:p-6 shadow-xl shadow-red-500/5 border border-red-100 flex flex-col items-center">
       {/* 标题与简介 */}
-      <div className="w-full flex items-center justify-between pb-3 border-b border-red-50 mb-5">
-        <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-xl bg-[#FFF0E6] flex items-center justify-center text-[#E74C3C]">
+      <div className="w-full flex items-center justify-between pb-3.5 border-b border-red-50 mb-5 gap-2">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-9 h-9 rounded-xl bg-[#FFF0E6] flex items-center justify-center text-[#E74C3C] shrink-0">
             <Bike className="w-5 h-5" />
           </div>
-          <div>
-            <h2 className="text-base font-bold text-gray-900">骑行卡路里计算器</h2>
-            <p className="text-[11px] text-gray-500">国际 MET 代谢标准 · 减脂热量换算</p>
+          <div className="min-w-0">
+            <h2 className="text-sm sm:text-base font-bold text-gray-900 whitespace-nowrap">骑行卡路里计算器</h2>
+            <p className="text-[11px] text-gray-500 whitespace-nowrap">MET 代谢标准 · 减脂热量换算</p>
           </div>
         </div>
 
         {/* 身体 BMI 徽章 */}
-        <div className="text-right">
-          <div className="text-[10px] text-gray-500 font-medium">身体 BMI</div>
-          <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-            {bmiInfo.bmi} ({bmiInfo.category})
+        <div className="text-right shrink-0">
+          <div className="text-[10px] text-gray-400 font-medium whitespace-nowrap mb-0.5">身体 BMI</div>
+          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 whitespace-nowrap shrink-0">
+            <span className="font-mono">{bmiInfo.bmi}</span>
+            <span className="text-[10px] font-medium px-1 py-0.2 rounded-full bg-emerald-100 text-emerald-800">
+              {bmiInfo.category}
+            </span>
           </span>
         </div>
       </div>
 
       {/* 身体参数输入：身高与体重 */}
-      <div className="grid grid-cols-2 gap-3 w-full mb-4">
-        <div className="bg-[#FFF8F4] p-3 rounded-2xl border border-red-100/80">
-          <label className="text-xs font-semibold text-gray-600 flex items-center gap-1 mb-1">
-            <Ruler className="w-3.5 h-3.5 text-[#E74C3C]" />
-            身高 (cm)
-          </label>
-          <input
-            type="number"
-            min="100"
-            max="230"
-            value={heightCm}
-            onChange={(e) => setHeightCm(Math.max(1, parseInt(e.target.value, 10) || 0))}
-            className="w-full p-2 bg-white rounded-xl border border-red-200 text-sm font-bold text-gray-900 font-mono text-center focus:outline-hidden focus:border-[#E74C3C]"
-          />
+      <div className="w-full mb-4">
+        <div className="flex items-center justify-between mb-1.5 px-0.5">
+          <span className="text-[11px] font-bold text-gray-600 flex items-center gap-1.5">
+            <span>个人身体参数</span>
+            <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded-full border border-emerald-200 font-medium">
+              自动保存记忆
+            </span>
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              setHeightCm(175);
+              setWeightKg(68);
+              setDistanceKm(15);
+              setDurationMinutes(45);
+              setSpeedMode('duration');
+              setPresetSpeed(20);
+              Taro.showToast({ title: '已恢复默认参数', icon: 'none' });
+            }}
+            className="text-[10px] text-gray-400 hover:text-[#E74C3C] cursor-pointer transition"
+          >
+            重置默认
+          </button>
         </div>
 
-        <div className="bg-[#FFF8F4] p-3 rounded-2xl border border-red-100/80">
-          <label className="text-xs font-semibold text-gray-600 flex items-center gap-1 mb-1">
-            <Scale className="w-3.5 h-3.5 text-[#E74C3C]" />
-            体重 (kg)
-          </label>
-          <input
-            type="number"
-            min="30"
-            max="200"
-            value={weightKg}
-            onChange={(e) => setWeightKg(Math.max(1, parseInt(e.target.value, 10) || 0))}
-            className="w-full p-2 bg-white rounded-xl border border-red-200 text-sm font-bold text-gray-900 font-mono text-center focus:outline-hidden focus:border-[#E74C3C]"
-          />
+        <div className="grid grid-cols-2 gap-3 w-full">
+          <div className="bg-[#FFF8F4] p-3 rounded-2xl border border-red-100/80">
+            <label className="text-xs font-semibold text-gray-600 flex items-center gap-1 mb-1">
+              <Ruler className="w-3.5 h-3.5 text-[#E74C3C]" />
+              身高 (cm)
+            </label>
+            <input
+              type="number"
+              min="100"
+              max="230"
+              value={heightCm}
+              onChange={(e) => setHeightCm(e.target.value === '' ? '' : Number(e.target.value))}
+              placeholder="175"
+              className="w-full p-2 bg-white rounded-xl border border-red-200 text-sm font-bold text-gray-900 font-mono text-center focus:outline-hidden focus:border-[#E74C3C]"
+            />
+          </div>
+
+          <div className="bg-[#FFF8F4] p-3 rounded-2xl border border-red-100/80">
+            <label className="text-xs font-semibold text-gray-600 flex items-center gap-1 mb-1">
+              <Scale className="w-3.5 h-3.5 text-[#E74C3C]" />
+              体重 (kg)
+            </label>
+            <input
+              type="number"
+              min="30"
+              max="200"
+              value={weightKg}
+              onChange={(e) => setWeightKg(e.target.value === '' ? '' : Number(e.target.value))}
+              placeholder="68"
+              className="w-full p-2 bg-white rounded-xl border border-red-200 text-sm font-bold text-gray-900 font-mono text-center focus:outline-hidden focus:border-[#E74C3C]"
+            />
+          </div>
         </div>
       </div>
 
@@ -211,7 +274,7 @@ export default function CyclingCalculator() {
             <Gauge className="w-3.5 h-3.5 text-[#E74C3C]" />
             骑行里程 (公里 / km)
           </label>
-          <span className="text-xs font-bold text-[#E74C3C] font-mono">{distanceKm} km</span>
+          <span className="text-xs font-bold text-[#E74C3C] font-mono">{distanceKm || 0} km</span>
         </div>
 
         <input
@@ -220,7 +283,8 @@ export default function CyclingCalculator() {
           min="0.1"
           max="300"
           value={distanceKm}
-          onChange={(e) => setDistanceKm(parseFloat(e.target.value) || 0)}
+          onChange={(e) => setDistanceKm(e.target.value === '' ? '' : parseFloat(e.target.value))}
+          placeholder="15"
           className="w-full p-2.5 bg-white rounded-xl border border-red-200 text-base font-bold text-gray-900 font-mono text-center mb-2 focus:outline-hidden focus:border-[#E74C3C]"
         />
 
@@ -279,7 +343,8 @@ export default function CyclingCalculator() {
                 min="1"
                 max="600"
                 value={durationMinutes}
-                onChange={(e) => setDurationMinutes(parseInt(e.target.value, 10) || 0)}
+                onChange={(e) => setDurationMinutes(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
+                placeholder="45"
                 className="w-full p-2 bg-white rounded-xl border border-red-200 text-sm font-bold text-gray-900 font-mono text-center focus:outline-hidden focus:border-[#E74C3C]"
               />
               <span className="text-xs font-semibold text-gray-500 shrink-0">分钟</span>
