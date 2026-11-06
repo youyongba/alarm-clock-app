@@ -9,6 +9,7 @@ import cors from 'cors';
 import { WebSocketServer, WebSocket } from 'ws';
 import { createServer as createViteServer } from 'vite';
 import { createWebhookHandler, deduplicator } from './server/webhook.js';
+import { createAuthRouter } from './server/auth.js';
 
 const app = express();
 app.use(cors());
@@ -79,11 +80,29 @@ const healthHandler = (req, res) => {
 
 const webhookHandler = createWebhookHandler(broadcastToAll);
 
+const authRouter = createAuthRouter();
+
 app.get('/health', healthHandler);
 app.post('/webhook/ring', webhookHandler);
 
+// 挂载用户认证、邮箱登录与密码找回 API
+const mountAuthRoutes = (targetApp) => {
+  targetApp.post('/api/auth/register', (req, res) => authRouter.register(req, res));
+  targetApp.post('/api/auth/login', (req, res) => authRouter.login(req, res));
+  targetApp.post('/api/auth/send-code', (req, res) => authRouter.sendCode(req, res));
+  targetApp.post('/api/auth/login-with-code', (req, res) => authRouter.loginWithCode(req, res));
+  targetApp.post('/api/auth/forgot-password', (req, res) => authRouter.forgotPassword(req, res));
+  targetApp.post('/api/auth/reset-password', (req, res) => authRouter.resetPassword(req, res));
+  targetApp.get('/api/auth/me', (req, res) => authRouter.getMe(req, res));
+  targetApp.post('/api/auth/update-profile', (req, res) => authRouter.updateProfile(req, res));
+  targetApp.post('/api/auth/logout', (req, res) => authRouter.logout(req, res));
+};
+
+mountAuthRoutes(app);
+
 app3001.get('/health', healthHandler);
 app3001.post('/webhook/ring', webhookHandler);
+mountAuthRoutes(app3001);
 
 // 客户端连接处理
 function setupWssListeners(wss, label) {

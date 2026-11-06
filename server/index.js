@@ -8,6 +8,7 @@ import cors from 'cors';
 import http from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import { createWebhookHandler } from './webhook.js';
+import { createAuthRouter } from './auth.js';
 
 const app = express();
 
@@ -54,6 +55,18 @@ app.get('/health', (req, res) => {
 
 // 注册 Webhook 接口
 app.post('/webhook/ring', createWebhookHandler(broadcast));
+
+// 注册用户认证 API
+const authRouter = createAuthRouter();
+app.post('/api/auth/register', (req, res) => authRouter.register(req, res));
+app.post('/api/auth/login', (req, res) => authRouter.login(req, res));
+app.post('/api/auth/send-code', (req, res) => authRouter.sendCode(req, res));
+app.post('/api/auth/login-with-code', (req, res) => authRouter.loginWithCode(req, res));
+app.post('/api/auth/forgot-password', (req, res) => authRouter.forgotPassword(req, res));
+app.post('/api/auth/reset-password', (req, res) => authRouter.resetPassword(req, res));
+app.get('/api/auth/me', (req, res) => authRouter.getMe(req, res));
+app.post('/api/auth/update-profile', (req, res) => authRouter.updateProfile(req, res));
+app.post('/api/auth/logout', (req, res) => authRouter.logout(req, res));
 
 // WebSocket 连接生命周期管理
 wss.on('connection', (ws, req) => {

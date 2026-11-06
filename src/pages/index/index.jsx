@@ -28,6 +28,9 @@ import CustomTimer from '@/components/CustomTimer.jsx';
 import TallyCounter from '@/components/TallyCounter.jsx';
 import CyclingCalculator from '@/components/CyclingCalculator.jsx';
 import RingHistory from '@/components/RingHistory.jsx';
+import AuthModal from '@/components/AuthModal.jsx';
+import UserProfile from '@/components/UserProfile.jsx';
+import { getCurrentUser, subscribeAuth } from '@/services/auth.js';
 import {
   Bell,
   Wifi,
@@ -48,12 +51,18 @@ import {
   Bike,
   Globe,
   History,
+  User as UserIcon,
 } from 'lucide-react';
 import './index.scss';
 
 export default function IndexPage() {
-  // 当前主功能 Tab: 'pomodoro' | 'timer' | 'counter' | 'cycling' | 'history'
+  // 当前主功能 Tab: 'pomodoro' | 'timer' | 'counter' | 'cycling' | 'history' | 'profile'
   const [activeTab, setActiveTab] = useState('pomodoro');
+
+  // 当前登录用户与鉴权模态框
+  const [currentUser, setCurrentUser] = useState(() => getCurrentUser());
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState('login');
 
   // WebSocket 连接状态
   const [wsStatus, setWsStatus] = useState('disconnected');
@@ -136,6 +145,14 @@ export default function IndexPage() {
     if (info.hasWakeLock) {
       Taro.setKeepScreenOn({ keepScreenOn: true });
     }
+  }, []);
+
+  // 监听用户登录状态变化
+  useEffect(() => {
+    const unsubscribe = subscribeAuth((user) => {
+      setCurrentUser(user);
+    });
+    return () => unsubscribe();
   }, []);
 
   // 屏幕常亮开关控制
@@ -378,6 +395,36 @@ export default function IndexPage() {
               未连接
             </span>
           )}
+
+          {/* 用户中心 / 登录按钮 */}
+          {currentUser ? (
+            <button
+              type="button"
+              onClick={() => switchTab('profile')}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shadow-xs transition cursor-pointer ${
+                activeTab === 'profile'
+                  ? 'bg-[#E74C3C] text-white border border-[#E74C3C]'
+                  : 'bg-white text-gray-800 border border-red-200 hover:border-[#E74C3C]'
+              }`}
+              title="查看我的个人中心与专属配置"
+            >
+              <span className="text-sm leading-none">{currentUser.avatar || '🍅'}</span>
+              <span className="max-w-[70px] truncate">{currentUser.nickname}</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setAuthModalMode('login');
+                setIsAuthModalOpen(true);
+              }}
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold bg-gradient-to-r from-[#E74C3C] to-[#C0392B] text-white shadow-xs hover:brightness-105 active:scale-95 transition cursor-pointer"
+              title="登录或注册"
+            >
+              <UserIcon className="w-3.5 h-3.5" />
+              <span>登录</span>
+            </button>
+          )}
         </div>
       </header>
 
@@ -395,8 +442,8 @@ export default function IndexPage() {
       {/* Webhook 触发响铃高亮横幅 */}
       <RingBanner event={ringEvent} onDismiss={handleDismissRing} />
 
-      {/* 主功能分类切换导航条 (5 大功能平滑切换) */}
-      <nav className="w-full max-w-md mx-auto mb-3 bg-white/70 backdrop-blur-md p-1.5 rounded-2xl border border-red-100 shadow-xs grid grid-cols-5 gap-1">
+      {/* 主功能分类切换导航条 (6 大功能平滑切换) */}
+      <nav className="w-full max-w-md mx-auto mb-3 bg-white/70 backdrop-blur-md p-1.5 rounded-2xl border border-red-100 shadow-xs grid grid-cols-6 gap-1">
         <button
           type="button"
           onClick={() => switchTab('pomodoro')}
@@ -470,6 +517,22 @@ export default function IndexPage() {
           <Bike className="w-3.5 h-3.5 shrink-0" />
           <span className="truncate">骑行热量</span>
         </button>
+
+        <button
+          type="button"
+          onClick={() => switchTab('profile')}
+          className={`py-2 px-0.5 rounded-xl text-[11px] sm:text-xs font-bold transition flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1 cursor-pointer relative ${
+            activeTab === 'profile'
+              ? 'bg-[#E74C3C] text-white shadow-md shadow-red-500/20'
+              : 'text-gray-600 hover:text-[#E74C3C]'
+          }`}
+        >
+          <UserIcon className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">我的</span>
+          {currentUser && (
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 absolute top-1.5 right-1.5 sm:hidden" />
+          )}
+        </button>
       </nav>
 
       {/* 快捷操作栏：测试响铃 + 屏幕常亮保持控制 */}
@@ -538,6 +601,22 @@ export default function IndexPage() {
         {activeTab === 'counter' && <TallyCounter />}
 
         {activeTab === 'cycling' && <CyclingCalculator />}
+
+        {activeTab === 'profile' && (
+          <UserProfile
+            user={currentUser}
+            onOpenAuthModal={() => {
+              setAuthModalMode('login');
+              setIsAuthModalOpen(true);
+            }}
+            onOpenAuthMode={(mode) => {
+              setAuthModalMode(mode);
+              setIsAuthModalOpen(true);
+            }}
+            completedPomodoros={pomodoro.completedPomodoros}
+            totalRingsCount={ringHistory.length}
+          />
+        )}
       </main>
 
       {/* 开发者与 iOS / Android / 云端 WSS 地址说明面板 */}
@@ -694,6 +773,16 @@ export default function IndexPage() {
           )}
         </div>
       </footer>
+
+      {/* 邮箱登录、注册与找回密码弹窗 */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        initialMode={authModalMode}
+        onSuccess={(user) => {
+          setCurrentUser(user);
+        }}
+      />
     </div>
   );
 }

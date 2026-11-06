@@ -15,6 +15,8 @@
 │   ├── webhook.js               # Webhook 鉴权、校验与广播路由
 │   ├── webhook-logic.js         # Webhook 校验与 1000条 FIFO 内存幂等去重
 │   ├── webhook-logic.test.js    # Webhook 单元测试
+│   ├── auth.js                  # 邮箱注册、登录、验证码发送与密码找回 API 路由
+│   ├── auth.test.js             # 认证服务单元测试
 │   └── package.json             # 服务端独立 package.json
 ├── src/
 │   ├── main.jsx                 # 前端应用入口
@@ -31,14 +33,19 @@
 │   │   ├── CustomTimer.jsx      # 自定义快捷倒计时与定点响铃闹钟
 │   │   ├── TallyCounter.jsx     # 多分类打卡计数器与目标达成追踪
 │   │   ├── CyclingCalculator.jsx# 骑行热量计算、BMI 分析与实地计时打卡
-│   │   └── RingHistory.jsx      # Webhook 触发与本地定时响铃记录列表
+│   │   ├── RingHistory.jsx      # Webhook 触发与本地定时响铃记录列表
+│   │   ├── AuthModal.jsx        # 邮箱密码/验证码登录、新用户注册与找回密码弹窗
+│   │   └── UserProfile.jsx      # “我的”个人中心、自律数据看板与专属 Webhook 凭证
 │   ├── services/
 │   │   ├── audio.js             # 音频管理器（设置 obeyMuteSwitch = false）
 │   │   ├── websocket.js         # WebSocket 客户端（指数退避自动重连）
+│   │   ├── auth.js              # 客户端用户认证与状态持久化服务
 │   │   └── taro-shim.js         # Taro 4 核心 API 纯 JS 兼容层与 Web Audio 引擎
 │   ├── hooks/
 │   │   └── usePomodoro.js       # 番茄钟业务逻辑 Hook
 │   ├── utils/
+│   │   ├── auth-logic.js        # 邮箱校验、密码强度、验证码生成校验纯函数
+│   │   ├── auth-logic.test.js   # 用户认证单元测试
 │   │   ├── timer-logic.js       # 计时器纯函数（计算进度、阶段切换）
 │   │   ├── timer-logic.test.js  # 计时器单元测试
 │   │   ├── counter-logic.js     # 计数器纯逻辑与进度计算
