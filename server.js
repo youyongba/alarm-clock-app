@@ -10,6 +10,11 @@ import { WebSocketServer, WebSocket } from 'ws';
 import { createServer as createViteServer } from 'vite';
 import { createWebhookHandler, deduplicator } from './server/webhook.js';
 import { createAuthRouter } from './server/auth.js';
+import {
+  registerClient,
+  unregisterClient,
+  createWebhookManagerRouter,
+} from './server/webhook-manager.js';
 
 const app = express();
 app.use(cors());
@@ -79,11 +84,21 @@ const healthHandler = (req, res) => {
 };
 
 const webhookHandler = createWebhookHandler(broadcastToAll);
-
+const webhookManagerRouter = createWebhookManagerRouter(broadcastToAll);
 const authRouter = createAuthRouter();
 
 app.get('/health', healthHandler);
 app.post('/webhook/ring', webhookHandler);
+
+// 挂载 Webhook 连接管理与测试 API
+const mountWebhookManagerRoutes = (targetApp) => {
+  targetApp.get('/api/webhook/status', (req, res) => webhookManagerRouter.getStatus(req, res));
+  targetApp.post('/api/webhook/test-trigger', (req, res) => webhookManagerRouter.testTrigger(req, res));
+  targetApp.post('/api/webhook/clear-logs', (req, res) => webhookManagerRouter.clearLogs(req, res));
+  targetApp.post('/api/webhook/ping-clients', (req, res) => webhookManagerRouter.pingClients(req, res));
+};
+
+mountWebhookManagerRoutes(app);
 
 // 挂载用户认证、邮箱登录与密码找回 API
 const mountAuthRoutes = (targetApp) => {
@@ -102,11 +117,13 @@ mountAuthRoutes(app);
 
 app3001.get('/health', healthHandler);
 app3001.post('/webhook/ring', webhookHandler);
+mountWebhookManagerRoutes(app3001);
 mountAuthRoutes(app3001);
 
 // 客户端连接处理
 function setupWssListeners(wss, label) {
-  wss.on('connection', (ws) => {
+  wss.on('connection', (ws, req) => {
+    registerClient(ws, req, label);
     console.log(`[WebSocket ${label}] 客户端已连接，总在线: ${wss3000.clients.size + wss3001.clients.size}`);
     ws.isAlive = true;
 
@@ -135,6 +152,7 @@ function setupWssListeners(wss, label) {
     });
 
     ws.on('close', () => {
+      unregisterClient(ws);
       console.log(`[WebSocket ${label}] 客户端断开连接`);
     });
   });

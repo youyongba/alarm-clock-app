@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { validateToken, validateWebhookPayload, EventDeduplicator } from './webhook-logic.js';
+import { validateToken, validateWebhookPayload } from './webhook-logic.js';
+import { deduplicator, recordWebhookLog } from './webhook-manager.js';
 
-// 全局事件去重器，最大保留 1000 条
-export const deduplicator = new EventDeduplicator(1000);
+export { deduplicator };
 
 /**
  * 创建 Webhook 处理函数
@@ -23,6 +23,17 @@ export function createWebhookHandler(broadcastFn) {
 
       if (!tokenCheck.valid) {
         console.warn(`[Webhook 401] 鉴权失败: ${tokenCheck.error}, Client IP: ${req.ip}`);
+        recordWebhookLog({
+          eventId: req.body?.eventId || 'unknown',
+          source: req.body?.source || 'external',
+          message: req.body?.message || '鉴权失败未处理',
+          durationMs: 0,
+          sound: 'none',
+          clientsNotified: 0,
+          isDuplicate: false,
+          status: 'unauthorized',
+          clientIp: req.ip || '127.0.0.1',
+        });
         return res.status(401).json({
           error: tokenCheck.error,
           hint: '请在请求头携带正确的 X-Webhook-Token',
@@ -44,6 +55,17 @@ export function createWebhookHandler(broadcastFn) {
         console.log(
           `[Webhook 去重] eventId: "${sanitized.eventId}" 之前已处理，跳过重复广播 (当前去重缓存: ${deduplicator.size}条)`
         );
+        recordWebhookLog({
+          eventId: sanitized.eventId,
+          source: sanitized.source,
+          message: sanitized.message,
+          durationMs: sanitized.durationMs,
+          sound: sanitized.sound,
+          clientsNotified: 0,
+          isDuplicate: true,
+          status: 'deduplicated',
+          clientIp: req.ip || '127.0.0.1',
+        });
         return res.status(200).json({
           ok: true,
           duplicate: true,
@@ -69,6 +91,18 @@ export function createWebhookHandler(broadcastFn) {
       console.log(
         `[Webhook 广播成功] eventId: "${sanitized.eventId}", message: "${sanitized.message}", 时长: ${sanitized.durationMs}ms, 已广播至 ${clientCount} 个活跃客户端`
       );
+
+      recordWebhookLog({
+        eventId: sanitized.eventId,
+        source: sanitized.source,
+        message: sanitized.message,
+        durationMs: sanitized.durationMs,
+        sound: sanitized.sound,
+        clientsNotified: clientCount,
+        isDuplicate: false,
+        status: 'broadcasted',
+        clientIp: req.ip || '127.0.0.1',
+      });
 
       return res.status(200).json({
         ok: true,

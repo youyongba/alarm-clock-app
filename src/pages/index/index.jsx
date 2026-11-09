@@ -51,11 +51,34 @@ import {
   Bike,
   Globe,
   History,
+  Laptop,
   User as UserIcon,
 } from 'lucide-react';
+import PcDashboard from '@/components/PcDashboard.jsx';
 import './index.scss';
 
 export default function IndexPage() {
+  // 视图模式: 'app' (移动端 APP) | 'pc' (PC 控制台)
+  const [viewMode, setViewMode] = useState(() => {
+    try {
+      const saved = localStorage.getItem('pomodoro_view_mode');
+      if (saved === 'pc' || saved === 'app') return saved;
+      if (typeof window !== 'undefined' && window.location.search.includes('mode=pc')) {
+        return 'pc';
+      }
+      return 'app';
+    } catch {
+      return 'app';
+    }
+  });
+
+  const handleSwitchViewMode = (mode) => {
+    setViewMode(mode);
+    try {
+      localStorage.setItem('pomodoro_view_mode', mode);
+    } catch {}
+  };
+
   // 当前主功能 Tab: 'pomodoro' | 'timer' | 'counter' | 'cycling' | 'history' | 'profile'
   const [activeTab, setActiveTab] = useState('pomodoro');
 
@@ -338,17 +361,59 @@ export default function IndexPage() {
     setActiveTab(tab);
   };
 
+  // PC 控制台模式渲染
+  if (viewMode === 'pc') {
+    return (
+      <>
+        {ringEvent && (
+          <RingBanner
+            event={ringEvent}
+            onClose={() => {
+              setRingEvent(null);
+              stopAllAudio();
+            }}
+          />
+        )}
+        <PcDashboard
+          onSwitchToApp={() => handleSwitchViewMode('app')}
+          currentUser={currentUser}
+          onOpenAuthModal={() => {
+            setAuthModalMode('login');
+            setIsAuthModalOpen(true);
+          }}
+          onOpenAuthMode={(mode) => {
+            setAuthModalMode(mode);
+            setIsAuthModalOpen(true);
+          }}
+          wsStatus={wsStatus}
+          ringHistory={ringHistory}
+          completedPomodoros={pomodoro.completedPomodoros || 0}
+          caloriesBurned={currentUser?.stats?.totalCaloriesKcal || 0}
+        />
+        <AuthModal
+          isOpen={isAuthModalOpen}
+          initialMode={authModalMode}
+          onClose={() => setIsAuthModalOpen(false)}
+          onSuccess={(user) => {
+            setCurrentUser(user);
+            setIsAuthModalOpen(false);
+          }}
+        />
+      </>
+    );
+  }
+
   return (
     <div className="pomodoro-app-container flex flex-col items-center">
       {/* 顶部标题与设备/连接状态条 */}
       <header className="w-full max-w-xl mx-auto py-2.5 px-3">
         <div className="flex items-center justify-between gap-2">
           {/* 左侧品牌与副标题 */}
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-2 shrink-0">
             <span className="text-2xl sm:text-3xl select-none shrink-0 leading-none" role="img" aria-label="tomato">
               🍅
             </span>
-            <div className="min-w-0 flex flex-col justify-center">
+            <div className="shrink-0 flex flex-col justify-center">
               <div className="flex items-center gap-1.5 whitespace-nowrap">
                 <h1 className="text-base sm:text-xl font-black text-gray-900 tracking-tight whitespace-nowrap">
                   番茄响铃器
@@ -358,18 +423,18 @@ export default function IndexPage() {
                 </span>
               </div>
               <div className="flex items-center gap-1 text-[10px] sm:text-[11px] text-gray-500 mt-0.5 whitespace-nowrap">
-                <span className="sm:hidden font-bold text-[#E74C3C] bg-red-50 px-1 py-0.2 rounded text-[9px] border border-red-100 shrink-0">
+                <span className="sm:hidden font-bold text-[#E74C3C] bg-red-50 px-1 py-0.5 rounded text-[9px] border border-red-100 shrink-0">
                   双端适配
                 </span>
-                <span className="truncate max-w-[130px] xs:max-w-[180px] sm:max-w-none">
-                  番茄钟 · 定时闹钟 · 触发记录 · 骑行热量
+                <span className="truncate max-w-[140px] sm:max-w-none text-gray-400">
+                  番茄钟 · 闹钟 · 记录 · 热量
                 </span>
               </div>
             </div>
           </div>
 
           {/* 右侧状态徽章与用户中心按钮 */}
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
             {/* 设备提示 (仅中大屏展开) */}
             <span
               className="hidden md:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-gray-100 text-gray-700 border border-gray-200 whitespace-nowrap shrink-0"
@@ -379,48 +444,48 @@ export default function IndexPage() {
               <span>{sysInfo.isIOS ? 'iOS 适配' : sysInfo.isAndroid ? 'Android 适配' : 'Web 全端'}</span>
             </span>
 
-            {/* WebSocket 状态徽章 */}
+            {/* WebSocket 状态徽章：移动端紧凑展示图标与点，桌面端展示文字 */}
             {wsStatus === 'connected' ? (
               <span
-                className="inline-flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-2xs whitespace-nowrap shrink-0"
+                className="inline-flex items-center gap-1 px-1.5 py-1 sm:px-2.5 sm:py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-2xs whitespace-nowrap shrink-0"
                 title="WebSocket 服务正常通信中"
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
                 <Wifi className="w-3 h-3 text-emerald-600 shrink-0" />
-                <span className="whitespace-nowrap">已连接</span>
+                <span className="hidden sm:inline whitespace-nowrap">已连接</span>
               </span>
             ) : wsStatus === 'reconnecting' ? (
               <span
-                className="inline-flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200 shadow-2xs whitespace-nowrap shrink-0"
+                className="inline-flex items-center gap-1 px-1.5 py-1 sm:px-2.5 sm:py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200 shadow-2xs whitespace-nowrap shrink-0"
                 title="正在尝试重新连接..."
               >
                 <RefreshCw className="w-3 h-3 text-amber-600 animate-spin shrink-0" />
-                <span className="whitespace-nowrap">重连中</span>
+                <span className="hidden sm:inline whitespace-nowrap">重连中</span>
               </span>
             ) : (
               <span
-                className="inline-flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1 rounded-full text-[11px] font-bold bg-rose-50 text-rose-800 border border-rose-200 shadow-2xs whitespace-nowrap shrink-0"
+                className="inline-flex items-center gap-1 px-1.5 py-1 sm:px-2.5 sm:py-1 rounded-full text-[11px] font-bold bg-rose-50 text-rose-800 border border-rose-200 shadow-2xs whitespace-nowrap shrink-0"
                 title="WebSocket 尚未连接"
               >
                 <WifiOff className="w-3 h-3 text-rose-600 shrink-0" />
-                <span className="whitespace-nowrap">未连接</span>
+                <span className="hidden sm:inline whitespace-nowrap">未连接</span>
               </span>
             )}
 
-            {/* 用户中心 / 登录按钮 */}
+            {/* 用户中心 / 登录按钮：移动端显示专属头像，桌面端展开昵称 */}
             {currentUser ? (
               <button
                 type="button"
                 onClick={() => switchTab('profile')}
-                className={`inline-flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1 rounded-full text-[11px] font-bold shadow-2xs transition cursor-pointer whitespace-nowrap shrink-0 ${
+                className={`inline-flex items-center gap-1 px-1.5 py-1 sm:px-2.5 sm:py-1 rounded-full text-[11px] font-bold shadow-2xs transition cursor-pointer whitespace-nowrap shrink-0 ${
                   activeTab === 'profile'
                     ? 'bg-[#E74C3C] text-white border border-[#E74C3C]'
                     : 'bg-white text-gray-800 border border-red-200 hover:border-[#E74C3C]'
                 }`}
-                title="查看我的个人中心与专属配置"
+                title={`已登录：${currentUser.nickname}（点击进入个人中心）`}
               >
                 <span className="text-sm leading-none shrink-0">{currentUser.avatar || '🍅'}</span>
-                <span className="max-w-[75px] sm:max-w-[110px] truncate whitespace-nowrap">
+                <span className="hidden sm:inline max-w-[100px] truncate whitespace-nowrap">
                   {currentUser.nickname}
                 </span>
               </button>
@@ -431,13 +496,25 @@ export default function IndexPage() {
                   setAuthModalMode('login');
                   setIsAuthModalOpen(true);
                 }}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-gradient-to-r from-[#E74C3C] to-[#C0392B] text-white shadow-2xs hover:brightness-105 active:scale-95 transition cursor-pointer whitespace-nowrap shrink-0"
-                title="登录或注册"
+                className="inline-flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1 rounded-full text-[11px] font-bold bg-gradient-to-r from-[#E74C3C] to-[#C0392B] text-white shadow-2xs hover:brightness-105 active:scale-95 transition cursor-pointer whitespace-nowrap shrink-0"
+                title="登录 / 注册"
               >
                 <UserIcon className="w-3 h-3 shrink-0" />
                 <span className="whitespace-nowrap">登录</span>
               </button>
             )}
+
+            {/* 切换至 PC 端控制台按钮：移动端紧凑展示 PC 端，桌面端展开完整文字 */}
+            <button
+              type="button"
+              onClick={() => handleSwitchViewMode('pc')}
+              className="inline-flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1 rounded-full text-[11px] font-bold bg-[#FFF0E6] hover:bg-[#FFE6D5] text-[#E74C3C] border border-red-200 shadow-2xs transition cursor-pointer whitespace-nowrap shrink-0"
+              title="切换至 PC 端控制台（管理 Webhook 连接、在线设备与调用日志）"
+            >
+              <Laptop className="w-3.5 h-3.5 shrink-0" />
+              <span className="sm:hidden whitespace-nowrap">PC端</span>
+              <span className="hidden sm:inline whitespace-nowrap">PC 控制台</span>
+            </button>
           </div>
         </div>
       </header>

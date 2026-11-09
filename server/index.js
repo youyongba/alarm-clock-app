@@ -9,6 +9,11 @@ import http from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import { createWebhookHandler } from './webhook.js';
 import { createAuthRouter } from './auth.js';
+import {
+  registerClient,
+  unregisterClient,
+  createWebhookManagerRouter,
+} from './webhook-manager.js';
 
 const app = express();
 
@@ -56,6 +61,13 @@ app.get('/health', (req, res) => {
 // 注册 Webhook 接口
 app.post('/webhook/ring', createWebhookHandler(broadcast));
 
+// 注册 Webhook 客户端与连接管理路由
+const webhookManager = createWebhookManagerRouter(broadcast);
+app.get('/api/webhook/status', (req, res) => webhookManager.getStatus(req, res));
+app.post('/api/webhook/test-trigger', (req, res) => webhookManager.testTrigger(req, res));
+app.post('/api/webhook/clear-logs', (req, res) => webhookManager.clearLogs(req, res));
+app.post('/api/webhook/ping-clients', (req, res) => webhookManager.pingClients(req, res));
+
 // 注册用户认证 API
 const authRouter = createAuthRouter();
 app.post('/api/auth/register', (req, res) => authRouter.register(req, res));
@@ -71,6 +83,7 @@ app.post('/api/auth/logout', (req, res) => authRouter.logout(req, res));
 // WebSocket 连接生命周期管理
 wss.on('connection', (ws, req) => {
   const remoteIp = req.socket.remoteAddress;
+  registerClient(ws, req, 'Standalone-Server');
   console.log(`[WebSocket] 新客户端连接成功 (${remoteIp}), 当前在线客户端数: ${wss.clients.size}`);
 
   // 发送欢迎与心跳包
@@ -100,6 +113,7 @@ wss.on('connection', (ws, req) => {
   });
 
   ws.on('close', () => {
+    unregisterClient(ws);
     console.log(`[WebSocket] 客户端断开连接, 剩余在线数: ${wss.clients.size}`);
   });
 
