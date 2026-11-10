@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Play, Pause, RotateCcw, SkipForward, Coffee, Flame } from 'lucide-react';
+import { Play, Pause, RotateCcw, SkipForward, Coffee, Flame, Square, AlertTriangle } from 'lucide-react';
 import { PHASE_CONFIG } from '@/utils/timer-logic.js';
 
 /**
@@ -16,12 +16,15 @@ import { PHASE_CONFIG } from '@/utils/timer-logic.js';
  * @param {string} props.formattedTime
  * @param {number} props.progress (0.0 ~ 1.0)
  * @param {number} props.completedPomodoros
+ * @param {string | null} [props.pendingSwitchPhase]
  * @param {() => void} props.onStart
  * @param {() => void} props.onPause
  * @param {() => void} props.onResume
  * @param {() => void} props.onReset
  * @param {() => void} props.onSkip
  * @param {(phase: string) => void} props.onSwitchPhase
+ * @param {() => void} [props.onConfirmSwitchPhase]
+ * @param {() => void} [props.onCancelSwitchPhase]
  */
 export default function PomodoroTimer({
   phase,
@@ -29,12 +32,15 @@ export default function PomodoroTimer({
   formattedTime,
   progress,
   completedPomodoros,
+  pendingSwitchPhase,
   onStart,
   onPause,
   onResume,
   onReset,
   onSkip,
   onSwitchPhase,
+  onConfirmSwitchPhase,
+  onCancelSwitchPhase,
 }) {
   // SVG 圆环参数
   const size = 280;
@@ -135,8 +141,37 @@ export default function PomodoroTimer({
         </div>
       </div>
 
+      {/* 阶段切换误触确认提示条 */}
+      {pendingSwitchPhase && (
+        <div className="w-full mt-3 p-3.5 bg-amber-50 border border-amber-200 rounded-2xl flex flex-col gap-2 text-xs text-amber-900 shadow-sm">
+          <div className="flex items-center gap-1.5 font-bold text-amber-900">
+            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+            <span>当前「{PHASE_CONFIG[phase]?.name}」正在进行中 (剩余 {formattedTime})</span>
+          </div>
+          <p className="text-amber-700 text-[11px] leading-relaxed">
+            切换为「{PHASE_CONFIG[pendingSwitchPhase]?.name}」将提前结束当前阶段。是否确认切换？
+          </p>
+          <div className="flex items-center justify-end gap-2 mt-1">
+            <button
+              type="button"
+              onClick={onCancelSwitchPhase}
+              className="px-3 py-1.5 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold transition cursor-pointer text-xs"
+            >
+              继续当前计时
+            </button>
+            <button
+              type="button"
+              onClick={onConfirmSwitchPhase}
+              className="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold transition cursor-pointer text-xs shadow-sm"
+            >
+              确认切换
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 控制按钮区域 */}
-      <div className="flex items-center justify-center gap-3 mt-7 w-full">
+      <div className="flex items-center justify-center gap-2.5 sm:gap-3 mt-6 w-full">
         {status === 'idle' && (
           <button
             type="button"
@@ -153,10 +188,19 @@ export default function PomodoroTimer({
             <button
               type="button"
               onClick={onPause}
-              className="flex-1 py-3.5 px-6 rounded-2xl bg-[#E74C3C] hover:bg-[#C0392B] active:scale-95 text-white font-bold text-base shadow-lg shadow-red-500/30 flex items-center justify-center gap-2 transition cursor-pointer"
+              className="flex-1 py-3.5 px-4 rounded-2xl bg-[#E74C3C] hover:bg-[#C0392B] active:scale-95 text-white font-bold text-base shadow-lg shadow-red-500/30 flex items-center justify-center gap-2 transition cursor-pointer"
             >
               <Pause className="w-5 h-5 fill-current" />
               暂停
+            </button>
+            <button
+              type="button"
+              onClick={onReset}
+              title="停止当前阶段并重置"
+              className="py-3.5 px-4 rounded-2xl bg-gray-100 hover:bg-gray-200 active:scale-95 text-gray-700 font-bold text-sm flex items-center justify-center gap-1.5 transition cursor-pointer"
+            >
+              <Square className="w-4 h-4 fill-current text-gray-600" />
+              停止
             </button>
             <button
               type="button"
@@ -175,7 +219,7 @@ export default function PomodoroTimer({
             <button
               type="button"
               onClick={onResume}
-              className="flex-1 py-3.5 px-6 rounded-2xl bg-[#27AE60] hover:bg-[#219653] active:scale-95 text-white font-bold text-base shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2 transition cursor-pointer"
+              className="flex-1 py-3.5 px-4 rounded-2xl bg-[#27AE60] hover:bg-[#219653] active:scale-95 text-white font-bold text-base shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2 transition cursor-pointer"
             >
               <Play className="w-5 h-5 fill-current" />
               继续
@@ -183,11 +227,11 @@ export default function PomodoroTimer({
             <button
               type="button"
               onClick={onReset}
-              title="重置"
-              className="p-3.5 rounded-2xl bg-gray-100 hover:bg-gray-200 active:scale-95 text-gray-700 transition cursor-pointer"
-              aria-label="重置"
+              title="停止并重置"
+              className="py-3.5 px-4 rounded-2xl bg-gray-100 hover:bg-gray-200 active:scale-95 text-gray-700 font-bold text-sm flex items-center justify-center gap-1.5 transition cursor-pointer"
             >
-              <RotateCcw className="w-5 h-5" />
+              <RotateCcw className="w-4 h-4" />
+              停止
             </button>
             <button
               type="button"

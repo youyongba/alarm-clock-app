@@ -1,6 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { formatTime, calculateProgress, getNextPhase, PHASE_CONFIG } from './timer-logic.js';
+import {
+  formatTime,
+  calculateProgress,
+  getNextPhase,
+  PHASE_CONFIG,
+  calculateRemainingSeconds,
+  restoreSessionState,
+} from './timer-logic.js';
 
 test('PHASE_CONFIG has correct standard durations', () => {
   assert.equal(PHASE_CONFIG.focus.duration, 1500); // 25 min
@@ -39,3 +46,65 @@ test('getNextPhase cycles through shortBreak and triggers longBreak every 4 focu
   assert.equal(p4.nextPhase, 'focus');
   assert.equal(p4.updatedCount, 4);
 });
+
+test('calculateRemainingSeconds handles timestamps correctly', () => {
+  const now = 1000000;
+  assert.equal(calculateRemainingSeconds(now + 300000, now), 300); // 5 min
+  assert.equal(calculateRemainingSeconds(now + 1000, now), 1);
+  assert.equal(calculateRemainingSeconds(now - 5000, now), 0);
+  assert.equal(calculateRemainingSeconds(null, now), 0);
+});
+
+test('restoreSessionState restores running, paused, and expired states accurately', () => {
+  const now = 1000000;
+
+  // 1. Null or empty state -> default focus idle
+  const s1 = restoreSessionState(null, now);
+  assert.equal(s1.phase, 'focus');
+  assert.equal(s1.status, 'idle');
+  assert.equal(s1.timeLeft, 1500);
+
+  // 2. Active running state with remaining time
+  const s2 = restoreSessionState(
+    {
+      phase: 'shortBreak',
+      status: 'running',
+      targetEndTime: now + 180000, // 3 min left
+      completedPomodoros: 2,
+    },
+    now
+  );
+  assert.equal(s2.phase, 'shortBreak');
+  assert.equal(s2.status, 'running');
+  assert.equal(s2.timeLeft, 180);
+  assert.equal(s2.completedPomodoros, 2);
+
+  // 3. Expired running state (time elapsed while away)
+  const s3 = restoreSessionState(
+    {
+      phase: 'focus',
+      status: 'running',
+      targetEndTime: now - 10000, // passed 10s ago
+      completedPomodoros: 1,
+    },
+    now
+  );
+  assert.equal(s3.phase, 'focus');
+  assert.equal(s3.status, 'completed');
+  assert.equal(s3.timeLeft, 0);
+
+  // 4. Paused state
+  const s4 = restoreSessionState(
+    {
+      phase: 'longBreak',
+      status: 'paused',
+      timeLeft: 450,
+      completedPomodoros: 4,
+    },
+    now
+  );
+  assert.equal(s4.phase, 'longBreak');
+  assert.equal(s4.status, 'paused');
+  assert.equal(s4.timeLeft, 450);
+});
+

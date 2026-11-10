@@ -1,1 +1,111 @@
 @import "tailwindcss";
+
+/**
+ * 全局自定义优雅滚动条 (Tomato Aesthetic Modern Scrollbar)
+ * - 告别默认宽粗灰色滚动条，采用 6px 纤细圆角胶囊悬浮设计
+ * - 适配番茄红温暖主调，并针对暗色代码块自动适配高质感半透明滑块
+ * - 兼顾 WebKit (Chrome/Edge/Safari) 与 W3C 标准 (Firefox scrollbar-width / scrollbar-color)
+ */
+
+/* 1. 根页面与默认滚动条美化 */
+:root {
+  --scrollbar-thumb-color: rgba(231, 76, 60, 0.32);
+  --scrollbar-thumb-hover: rgba(231, 76, 60, 0.65);
+  --scrollbar-thumb-active: rgba(231, 76, 60, 0.9);
+  --scrollbar-track-color: rgba(255, 240, 235, 0.3);
+}
+
+/* W3C 标准 (Firefox / 新版规范) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb-color) transparent;
+}
+
+/* WebKit 内核 (Chrome, Safari, Edge, 微信内置浏览器等) */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb-color);
+  border-radius: 9999px;
+  transition: background-color 0.2s ease-in-out;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: var(--scrollbar-thumb-active);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* 2. 暗色容器专属滚动条（代码预览 pre、终端日志、JSON 响应区） */
+pre,
+.dark-scrollbar,
+.bg-gray-950,
+.bg-gray-900 {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+}
+
+pre::-webkit-scrollbar,
+.dark-scrollbar::-webkit-scrollbar,
+.bg-gray-950::-webkit-scrollbar,
+.bg-gray-900::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+pre::-webkit-scrollbar-track,
+.dark-scrollbar::-webkit-scrollbar-track,
+.bg-gray-950::-webkit-scrollbar-track,
+.bg-gray-900::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 9999px;
+}
+
+pre::-webkit-scrollbar-thumb,
+.dark-scrollbar::-webkit-scrollbar-thumb,
+.bg-gray-950::-webkit-scrollbar-thumb,
+.bg-gray-900::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+}
+
+pre::-webkit-scrollbar-thumb:hover,
+.dark-scrollbar::-webkit-scrollbar-thumb:hover,
+.bg-gray-950::-webkit-scrollbar-thumb:hover,
+.bg-gray-900::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.45);
+}
+
+/* 3. 辅助实用类：隐藏滚动条（用于移动端横向滑动 Tab，保留滑动功能但视觉纯净） */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* 4. 辅助实用类：平滑滚动与优化 */
+html {
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
+}

@@ -3,61 +3,53 @@
 这是一个基于 **Taro 4 + React + 纯 JavaScript** 实现的番茄钟 Web 应用，并配套轻量 **Node.js (Express + ws)** 服务端。
 支持外部系统通过 **Webhook (HTTP POST)** 触发响铃，服务端通过 **WebSocket** 广播给活跃的前端客户端，并在 iPhone 开启硬件静音拨片时强制发声。
 
+> 📖 **完整工程架构、起动与部署指南详见**：[**DEPLOYMENT.md (完整部署与启动手册)**](./DEPLOYMENT.md)  
+> 🔌 **移动端与 Web 端页面模块接口文档详见**：[**API_DOCUMENTATION.md (接口规范文档)**](./API_DOCUMENTATION.md)
+
 ---
 
-## 目录结构
+## 目录结构（页面与模块完全解耦）
 ```text
-├── index.html                   # 页面入口
-├── vite.config.js               # Vite 配置（纯 JavaScript，包含 Taro 别名）
-├── server.js                    # 全栈主服务（支持 3000 端口全栈与 3001 端口独立 Webhook）
+├── index.html                   # 自适应全功能主入口
+├── mobile.html                  # 移动端独立挂载宿主页
+├── web.html                     # PC 控制台独立挂载宿主页
+├── DEPLOYMENT.md                # 部署、起动与目录结构完整技术文档
+├── API_DOCUMENTATION.md         # 页面模块与后端接口对照技术文档
+├── vite.config.js               # 多页面打包与别名配置
+├── server.js                    # 全功能主服务（Port 3000）
 ├── server/
 │   ├── index.js                 # 独立后端服务（Express + ws，默认端口 3001）
-│   ├── webhook.js               # Webhook 鉴权、校验与广播路由
-│   ├── webhook-logic.js         # Webhook 校验与 1000条 FIFO 内存幂等去重
-│   ├── webhook-logic.test.js    # Webhook 单元测试
-│   ├── auth.js                  # 邮箱注册、登录、验证码发送与密码找回 API 路由
-│   ├── auth.test.js             # 认证服务单元测试
-│   └── package.json             # 服务端独立 package.json
+│   ├── server-mobile.js         # 移动端专用部署实例
+│   ├── server-web.js            # Web 控制台专用部署实例
+│   ├── webhook.js               # Webhook 核心路由与广播
+│   ├── webhook-logic.js         # 1000条 FIFO 内存幂等去重与校验算法
+│   └── auth.js                  # 账户注册、登录与密码找回 API
 ├── src/
-│   ├── main.jsx                 # 前端应用入口
-│   ├── App.jsx                  # 根组件
-│   ├── index.css                # 全局样式
-│   ├── pages/
-│   │   └── index/
-│   │       ├── index.jsx        # 番茄钟主页面
-│   │       └── index.scss       # 番茄红暖色主题样式
-│   ├── components/
-│   │   ├── PomodoroTimer.jsx    # SVG 圆形进度环与番茄计时控制器
-│   │   ├── RingBanner.jsx       # Webhook 响铃红色脉冲横幅
-│   │   ├── CurrentClock.jsx     # 实时数字时钟与中文日期
-│   │   ├── CustomTimer.jsx      # 自定义快捷倒计时与定点响铃闹钟
-│   │   ├── TallyCounter.jsx     # 多分类打卡计数器与目标达成追踪
-│   │   ├── CyclingCalculator.jsx# 骑行热量计算、BMI 分析与实地计时打卡
-│   │   ├── RingHistory.jsx      # Webhook 触发与本地定时响铃记录列表
-│   │   ├── AuthModal.jsx        # 邮箱密码/验证码登录、新用户注册与找回密码弹窗
-│   │   └── UserProfile.jsx      # “我的”个人中心、自律数据看板与专属 Webhook 凭证
-│   ├── services/
-│   │   ├── audio.js             # 音频管理器（设置 obeyMuteSwitch = false）
-│   │   ├── websocket.js         # WebSocket 客户端（指数退避自动重连）
-│   │   ├── auth.js              # 客户端用户认证与状态持久化服务
-│   │   └── taro-shim.js         # Taro 4 核心 API 纯 JS 兼容层与 Web Audio 引擎
-│   ├── hooks/
-│   │   └── usePomodoro.js       # 番茄钟业务逻辑 Hook
-│   ├── utils/
-│   │   ├── auth-logic.js        # 邮箱校验、密码强度、验证码生成校验纯函数
-│   │   ├── auth-logic.test.js   # 用户认证单元测试
-│   │   ├── timer-logic.js       # 计时器纯函数（计算进度、阶段切换）
-│   │   ├── timer-logic.test.js  # 计时器单元测试
-│   │   ├── counter-logic.js     # 计数器纯逻辑与进度计算
-│   │   ├── counter-logic.test.js# 计数器单元测试
-│   │   ├── scheduled-timer-logic.js      # 定点闹钟与时间格式化
-│   │   ├── scheduled-timer-logic.test.js # 定点闹钟单元测试
-│   │   ├── cycling-logic.js     # 骑行卡路里与 MET 能量公式计算
-│   │   ├── cycling-logic.test.js# 骑行热量单元测试
-│   │   ├── history-logic.js     # 响铃记录过滤与格式化纯逻辑
-│   │   └── history-logic.test.js# 响铃记录单元测试
-│   └── assets/
-│       └── audio/
+│   ├── index.css                # 全局样式（6px 优雅纤细自定义滚动条）
+│   ├── main.jsx                 # 全功能主入口
+│   ├── main-mobile.jsx          # 移动端专属入口
+│   ├── main-web.jsx             # Web 控制台专属入口
+│   ├── mobile/                  # 📱 移动端页面及子模块
+│   │   ├── MobileApp.jsx        # 移动端主界面
+│   │   └── components/
+│   │       ├── MobileHeader.jsx # 移动端顶栏
+│   │       ├── MobileNav.jsx    # 核心功能胶囊导航条
+│   │       ├── QuickActions.jsx # 静音穿透与常亮控制
+│   │       └── DevPanel.jsx     # 开发者调试与 WSS 诊断折叠卡片
+│   ├── web/                     # 💻 Web / PC 控制台页面及子模块
+│   │   ├── WebApp.jsx           # PC 控制台主界面
+│   │   └── components/
+│   │       ├── WebHeader.jsx    # 控制台顶栏与登录入口
+│   │       ├── ClientsPanel.jsx # 实时在线客户端监控表格
+│   │       ├── TriggerPanel.jsx # Webhook 模拟与即时触发器
+│   │       ├── LogsPanel.jsx    # 服务端调用审计历史与搜索
+│   │       ├── CodeGenPanel.jsx # cURL / JS / Python / Go 代码生成器
+│   │       └── WebProfilePanel.jsx # 账户凭证与专属 Token 管理
+│   ├── pages/index/index.jsx    # 路由调度层（智能自适应 + 一键互切）
+│   ├── components/              # 跨端通用业务组件
+│   ├── services/                # 音频、WebSocket、账户与平台能力服务
+│   └── utils/                   # 纯业务逻辑与单测
+```
 │           ├── ring.mp3         # Webhook 响铃音效
 │           ├── focus-end.mp3    # 专注完成提示音效
 │           └── break-end.mp3    # 休息结束提示音效
@@ -66,28 +58,68 @@
 
 ---
 
-## 启动与运行指南
+## 启动与独立部署指南
 
-### 1. 启动全栈应用（前端 + 服务端）
+本项目现已全面支持 **移动端** 与 **Web/PC 控制台端** 的**分开启动与独立部署**：
+
+### 1. 统一全栈启动（同时支持移动端与 Web 端切换）
 ```bash
 npm run dev
 ```
-启动后：
-- 前端页面在 `http://localhost:3000`
-- Webhook 接收端点在 `http://localhost:3001/webhook/ring` 以及 `http://localhost:3000/webhook/ring`
-- WebSocket 服务端在 `ws://localhost:3001/ws` 以及 `ws://localhost:3000/ws`
+- 主入口：`http://localhost:3000`
+- Web/PC 控制台直达入口：`http://localhost:3000/web` 或 `http://localhost:3000/pc`
+- 移动端 App 直达入口：`http://localhost:3000/mobile` 或 `http://localhost:3000/app`
 
-### 2. 单独启动后端服务（可选）
+---
+
+### 2. 移动端 (Mobile App) 独立启动与独立部署
+适合面向 iOS / Android 手机浏览器、PWA 移动客户端单独打包部署。
 ```bash
-node server/index.js
-```
-默认在 `http://localhost:3001` 启动服务。
+# 移动端独立开发启动
+npm run dev:mobile
 
-### 3. 运行自动化单元测试
+# 移动端独立打包构建
+npm run build:mobile
+
+# 移动端独立生产环境启动 (加载 dist/index.html)
+npm run start:mobile
+```
+
+---
+
+### 3. Web 端 (PC 控制台) 独立启动与独立部署
+适合运维看板、管理员调度大屏、多设备连接监控独立打包部署。
+```bash
+# Web/PC 控制台独立开发启动
+npm run dev:web
+
+# Web/PC 控制台独立打包构建
+npm run build:web
+
+# Web/PC 控制台独立生产环境启动 (加载 dist/web.html)
+npm run start:web
+```
+
+---
+
+### 4. 独立后端服务（Headless API & WebSocket 服务）
+适用于前后端分离架构，前端静态托管至 CDN/Nginx，后端独立运行在云服务器或 Docker：
+```bash
+npm run server
+# 或直接运行：node server/index.js
+```
+- 默认监听端口：`http://0.0.0.0:3001`
+- 健康检查：`GET http://localhost:3001/health`
+- Webhook 触发：`POST http://localhost:3001/webhook/ring`
+- WebSocket 广播：`ws://localhost:3001/ws`
+
+---
+
+### 5. 运行自动化单元测试
 ```bash
 npm test
 ```
-使用 Node.js 内置 test runner (`node:test`) 验证计时器逻辑、参数验证与 1000 条 FIFO 内存幂等去重。
+覆盖 41 项纯函数与逻辑单元测试（包含路由判断、独立部署服务器导出、Webhook 幂等去重、用户鉴权等）。
 
 ---
 

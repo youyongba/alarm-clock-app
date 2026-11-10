@@ -5,6 +5,7 @@
 
 import express from 'express';
 import http from 'http';
+import path from 'path';
 import cors from 'cors';
 import { WebSocketServer, WebSocket } from 'ws';
 import { createServer as createViteServer } from 'vite';
@@ -95,6 +96,7 @@ const mountWebhookManagerRoutes = (targetApp) => {
   targetApp.get('/api/webhook/status', (req, res) => webhookManagerRouter.getStatus(req, res));
   targetApp.post('/api/webhook/test-trigger', (req, res) => webhookManagerRouter.testTrigger(req, res));
   targetApp.post('/api/webhook/clear-logs', (req, res) => webhookManagerRouter.clearLogs(req, res));
+  targetApp.delete('/api/webhook/logs', (req, res) => webhookManagerRouter.clearLogs(req, res));
   targetApp.post('/api/webhook/ping-clients', (req, res) => webhookManagerRouter.pingClients(req, res));
 };
 
@@ -174,9 +176,31 @@ async function start() {
       },
       appType: 'spa',
     });
+
+    // 开发环境路由重写：独立访问 /web 或 /pc 映射至独立的 web.html，/mobile 或 /app 映射至 mobile.html
+    app.use((req, res, next) => {
+      const pathname = req.url.split('?')[0];
+      if (pathname === '/web' || pathname === '/pc' || pathname.startsWith('/web/') || pathname.startsWith('/pc/')) {
+        req.url = '/web.html' + (req.url.includes('?') ? '?' + req.url.split('?')[1] : '');
+      } else if (pathname === '/mobile' || pathname === '/app' || pathname.startsWith('/mobile/')) {
+        req.url = '/mobile.html' + (req.url.includes('?') ? '?' + req.url.split('?')[1] : '');
+      }
+      next();
+    });
+
     app.use(vite.middlewares);
   } else {
+    // 生产环境独立路由静态资源映射
+    app.get(['/web', '/pc', '/web/*', '/pc/*'], (req, res) => {
+      res.sendFile(path.resolve('dist/web.html'));
+    });
+    app.get(['/mobile', '/app', '/mobile/*', '/app/*'], (req, res) => {
+      res.sendFile(path.resolve('dist/mobile.html'));
+    });
     app.use(express.static('dist'));
+    app.get('*', (req, res) => {
+      res.sendFile(path.resolve('dist/index.html'));
+    });
   }
 
   // 监听 3000（主服务）

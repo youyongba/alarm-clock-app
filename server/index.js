@@ -66,6 +66,7 @@ const webhookManager = createWebhookManagerRouter(broadcast);
 app.get('/api/webhook/status', (req, res) => webhookManager.getStatus(req, res));
 app.post('/api/webhook/test-trigger', (req, res) => webhookManager.testTrigger(req, res));
 app.post('/api/webhook/clear-logs', (req, res) => webhookManager.clearLogs(req, res));
+app.delete('/api/webhook/logs', (req, res) => webhookManager.clearLogs(req, res));
 app.post('/api/webhook/ping-clients', (req, res) => webhookManager.pingClients(req, res));
 
 // 注册用户认证 API
