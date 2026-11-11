@@ -151,7 +151,7 @@ export default function MobileApp({ onSwitchToPc }) {
       if (data && data.type === 'ring') {
         setRingEvent(data);
         playRingSound({
-          soundType: data.soundType || 'default',
+          soundType: data.sound || data.soundType || 'ring',
           durationMs: data.durationMs || 3000,
           volume: data.volume ?? 1.0,
         });
@@ -356,7 +356,13 @@ export default function MobileApp({ onSwitchToPc }) {
               setAuthModalMode('login');
               setIsAuthModalOpen(true);
             }}
+            onOpenAuthMode={(mode) => {
+              setAuthModalMode(mode || 'login');
+              setIsAuthModalOpen(true);
+            }}
             onSwitchTab={switchTab}
+            completedPomodoros={pomodoro.completedPomodoros || 0}
+            caloriesBurned={currentUser?.stats?.totalCaloriesKcal || 0}
           />
         )}
       </main>

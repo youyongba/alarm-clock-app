@@ -139,15 +139,36 @@ export function playAudio(src, options = {}) {
 }
 
 /**
- * 播放 Webhook 响铃音效 (ring.mp3) 并伴随 Android 硬件震动
- * @param {{ durationMs?: number, onEnded?: () => void }} [params]
+ * 音频资源映射表
+ */
+export const AUDIO_SOURCES = {
+  ring: ringAudioUrl,
+  'focus-end': focusEndAudioUrl,
+  'break-end': breakEndAudioUrl,
+};
+
+/**
+ * 核心响铃与音效播放器
+ * 支持根据 sound / soundType 动态切换标准响铃、专注完成或休息结束音效
+ * @param {{ sound?: string, soundType?: string, durationMs?: number, loop?: boolean, vibrate?: boolean, onEnded?: () => void }} [params]
  */
 export function playRingSound(params = {}) {
-  const duration = params.durationMs || 5000;
-  return playAudio(ringAudioUrl, {
+  const soundKey = params.sound || params.soundType || 'ring';
+  const targetAudioUrl = AUDIO_SOURCES[soundKey] || ringAudioUrl;
+  const isRingAlarm = soundKey === 'ring' || soundKey === 'default';
+
+  const duration = params.durationMs || (isRingAlarm ? 5000 : 2500);
+  const shouldLoop = params.loop !== undefined ? params.loop : isRingAlarm;
+  const shouldVibrate = params.vibrate !== undefined ? params.vibrate : isRingAlarm;
+
+  if (soundKey === 'focus-end' || soundKey === 'break-end') {
+    Taro.vibrateShort();
+  }
+
+  return playAudio(targetAudioUrl, {
     durationMs: duration,
-    loop: true,
-    vibrate: true,
+    loop: shouldLoop,
+    vibrate: shouldVibrate,
     onEnded: params.onEnded,
   });
 }
@@ -159,6 +180,7 @@ export function playRingSound(params = {}) {
 export function playFocusEndSound(onEnded) {
   Taro.vibrateShort();
   return playAudio(focusEndAudioUrl, {
+    durationMs: 2500,
     loop: false,
     vibrate: false,
     onEnded,
@@ -172,6 +194,7 @@ export function playFocusEndSound(onEnded) {
 export function playBreakEndSound(onEnded) {
   Taro.vibrateShort();
   return playAudio(breakEndAudioUrl, {
+    durationMs: 2500,
     loop: false,
     vibrate: false,
     onEnded,
@@ -183,7 +206,9 @@ export function playBreakEndSound(onEnded) {
  */
 export function testRingSound(onEnded) {
   return playRingSound({
+    sound: 'ring',
     durationMs: 3000,
     onEnded,
   });
 }
+

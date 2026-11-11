@@ -114,7 +114,7 @@ export default function WebApp({
       if (data && data.type === 'ring') {
         setRingEvent(data);
         playRingSound({
-          soundType: data.soundType || 'ring',
+          soundType: data.sound || data.soundType || 'ring',
           durationMs: data.durationMs || 3000,
           volume: data.volume ?? 1.0,
         });

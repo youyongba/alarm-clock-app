@@ -7,7 +7,7 @@ import React, { useState } from 'react';
 import Taro from '@tarojs/taro';
 import { clearAuthSession, updateProfile } from '@/services/auth.js';
 import { AVATAR_PRESETS } from '@/utils/auth-logic.js';
-import { playRingSound, testRingSound } from '@/services/audio.js';
+import { playRingSound, playFocusEndSound, playBreakEndSound, testRingSound } from '@/services/audio.js';
 import {
   User,
   Mail,
@@ -57,6 +57,7 @@ export default function UserProfile({
   const [copiedCurl, setCopiedCurl] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [confirmLogout, setConfirmLogout] = useState(false);
+  const [playingSound, setPlayingSound] = useState(null);
 
   // 本地更新昵称
   const handleSaveNickname = async () => {
@@ -124,13 +125,116 @@ export default function UserProfile({
 
   // 试听音效
   const handlePreviewSound = (soundType) => {
-    playRingSound({
-      sound: soundType,
-      durationMs: 2500,
-      obeyMuteSwitch: false,
-      message: '音效试听',
+    setPlayingSound(soundType);
+    const soundLabels = {
+      ring: '标准响铃 (ring.mp3)',
+      'focus-end': '专注结束 (focus-end.mp3)',
+      'break-end': '休息结束 (break-end.mp3)',
+    };
+    Taro.showToast({
+      title: `正在试听: ${soundLabels[soundType] || soundType}`,
+      icon: 'none',
+      duration: 1500,
     });
+
+    if (soundType === 'focus-end') {
+      playFocusEndSound(() => {
+        setPlayingSound((curr) => (curr === 'focus-end' ? null : curr));
+      });
+    } else if (soundType === 'break-end') {
+      playBreakEndSound(() => {
+        setPlayingSound((curr) => (curr === 'break-end' ? null : curr));
+      });
+    } else {
+      playRingSound({
+        sound: 'ring',
+        durationMs: 2500,
+        loop: false,
+        onEnded: () => {
+          setPlayingSound((curr) => (curr === 'ring' ? null : curr));
+        },
+      });
+    }
+
+    // 安全超时恢复状态
+    setTimeout(() => {
+      setPlayingSound((curr) => (curr === soundType ? null : curr));
+    }, 2600);
   };
+
+  const handleOpenAuth = (mode = 'login') => {
+    if (typeof onOpenAuthMode === 'function') {
+      onOpenAuthMode(mode);
+    } else if (typeof onOpenAuthModal === 'function') {
+      onOpenAuthModal();
+    }
+  };
+
+  // 渲染试听音效卡片
+  const renderSoundPreviewCard = () => (
+    <div className="bg-white rounded-3xl p-4 shadow-xs border border-gray-100 space-y-2.5">
+      <h3 className="font-bold text-gray-800 flex items-center gap-1.5">
+        <Volume2 className="w-3.5 h-3.5 text-[#E74C3C]" />
+        <span>响铃音效与试听偏好</span>
+      </h3>
+
+      <div className="grid grid-cols-3 gap-2">
+        <button
+          type="button"
+          onClick={() => handlePreviewSound('ring')}
+          className={`py-2 px-2 rounded-xl border flex flex-col items-center gap-1 transition cursor-pointer relative ${
+            playingSound === 'ring'
+              ? 'border-[#E74C3C] bg-red-50 text-[#E74C3C] ring-2 ring-[#E74C3C]/30 shadow-xs'
+              : 'border-gray-200 hover:border-red-300 hover:bg-red-50/30'
+          }`}
+        >
+          <span className="font-bold text-[11px] flex items-center gap-1">
+            <span>标准响铃</span>
+            {playingSound === 'ring' && <span className="text-[10px] animate-pulse">🔊</span>}
+          </span>
+          <span className={`text-[10px] ${playingSound === 'ring' ? 'text-[#E74C3C] font-semibold' : 'text-gray-400'}`}>
+            ring.mp3
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handlePreviewSound('focus-end')}
+          className={`py-2 px-2 rounded-xl border flex flex-col items-center gap-1 transition cursor-pointer relative ${
+            playingSound === 'focus-end'
+              ? 'border-[#E74C3C] bg-red-50 text-[#E74C3C] ring-2 ring-[#E74C3C]/30 shadow-xs'
+              : 'border-gray-200 hover:border-red-300 hover:bg-red-50/30'
+          }`}
+        >
+          <span className="font-bold text-[11px] flex items-center gap-1">
+            <span>专注结束</span>
+            {playingSound === 'focus-end' && <span className="text-[10px] animate-pulse">🔊</span>}
+          </span>
+          <span className={`text-[10px] ${playingSound === 'focus-end' ? 'text-[#E74C3C] font-semibold' : 'text-gray-400'}`}>
+            focus-end.mp3
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handlePreviewSound('break-end')}
+          className={`py-2 px-2 rounded-xl border flex flex-col items-center gap-1 transition cursor-pointer relative ${
+            playingSound === 'break-end'
+              ? 'border-[#E74C3C] bg-red-50 text-[#E74C3C] ring-2 ring-[#E74C3C]/30 shadow-xs'
+              : 'border-gray-200 hover:border-red-300 hover:bg-red-50/30'
+          }`}
+        >
+          <span className="font-bold text-[11px] flex items-center gap-1">
+            <span>休息结束</span>
+            {playingSound === 'break-end' && <span className="text-[10px] animate-pulse">🔊</span>}
+          </span>
+          <span className={`text-[10px] ${playingSound === 'break-end' ? 'text-[#E74C3C] font-semibold' : 'text-gray-400'}`}>
+            break-end.mp3
+          </span>
+        </button>
+      </div>
+    </div>
+  );
 
   // 未登录状态展示卡片
   if (!user) {
@@ -152,7 +256,7 @@ export default function UserProfile({
           <div className="w-full flex flex-col sm:flex-row gap-2.5">
             <button
               type="button"
-              onClick={() => onOpenAuthMode('login')}
+              onClick={() => handleOpenAuth('login')}
               className="flex-1 py-3 px-4 rounded-2xl bg-gradient-to-r from-[#E74C3C] to-[#C0392B] text-white font-bold text-xs shadow-md shadow-red-500/20 hover:brightness-105 active:scale-95 transition cursor-pointer flex items-center justify-center gap-1.5"
             >
               <User className="w-3.5 h-3.5" />
@@ -161,7 +265,7 @@ export default function UserProfile({
 
             <button
               type="button"
-              onClick={() => onOpenAuthMode('forgot')}
+              onClick={() => handleOpenAuth('forgot')}
               className="py-3 px-4 rounded-2xl bg-gray-50 hover:bg-gray-100 text-gray-700 font-bold text-xs border border-gray-200 transition cursor-pointer flex items-center justify-center gap-1.5"
             >
               <KeyRound className="w-3.5 h-3.5 text-gray-500" />
@@ -169,6 +273,9 @@ export default function UserProfile({
             </button>
           </div>
         </div>
+
+        {/* 响铃音效与试听偏好卡片 (免登录也可试听) */}
+        {renderSoundPreviewCard()}
 
         {/* 账户优势介绍 */}
         <div className="bg-white rounded-3xl p-5 shadow-xs border border-gray-100 space-y-3">
@@ -411,47 +518,13 @@ export default function UserProfile({
       </div>
 
       {/* 音频与静音偏好设置 */}
-      <div className="bg-white rounded-3xl p-4 shadow-xs border border-gray-100 space-y-2.5">
-        <h3 className="font-bold text-gray-800 flex items-center gap-1.5">
-          <Volume2 className="w-3.5 h-3.5 text-[#E74C3C]" />
-          <span>响铃音效与试听偏好</span>
-        </h3>
-
-        <div className="grid grid-cols-3 gap-2">
-          <button
-            type="button"
-            onClick={() => handlePreviewSound('ring')}
-            className="py-2 px-2.5 rounded-xl border border-gray-200 hover:border-red-300 hover:bg-red-50/30 flex flex-col items-center gap-1 transition cursor-pointer"
-          >
-            <span className="font-bold text-gray-800 text-[11px]">标准响铃</span>
-            <span className="text-[10px] text-gray-400">ring.mp3</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handlePreviewSound('focus-end')}
-            className="py-2 px-2.5 rounded-xl border border-gray-200 hover:border-red-300 hover:bg-red-50/30 flex flex-col items-center gap-1 transition cursor-pointer"
-          >
-            <span className="font-bold text-gray-800 text-[11px]">专注结束</span>
-            <span className="text-[10px] text-gray-400">focus-end.mp3</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handlePreviewSound('break-end')}
-            className="py-2 px-2.5 rounded-xl border border-gray-200 hover:border-red-300 hover:bg-red-50/30 flex flex-col items-center gap-1 transition cursor-pointer"
-          >
-            <span className="font-bold text-gray-800 text-[11px]">休息结束</span>
-            <span className="text-[10px] text-gray-400">break-end.mp3</span>
-          </button>
-        </div>
-      </div>
+      {renderSoundPreviewCard()}
 
       {/* 账户安全与操作 */}
       <div className="bg-white rounded-3xl p-4 shadow-xs border border-gray-100 space-y-1">
         <button
           type="button"
-          onClick={() => onOpenAuthMode('forgot')}
+          onClick={() => handleOpenAuth('forgot')}
           className="w-full py-2.5 px-3 rounded-xl hover:bg-gray-50 flex items-center justify-between text-gray-700 transition cursor-pointer"
         >
           <div className="flex items-center gap-2">
